@@ -104,6 +104,19 @@ svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke
 .ptabs{display:flex;border-bottom:1px solid var(--line);margin:20px -16px 0}
 .ptabs button{flex:1;padding:12px 0;color:var(--mut);display:flex;justify-content:center;border-bottom:2px solid transparent}
 .ptabs button.on{color:var(--acc);border-color:var(--acc)}
+.uh{display:flex;align-items:center;justify-content:space-between}
+.sh{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.sh h2{font-size:17px;flex:1}
+.sep{height:6px;background:var(--in);margin-top:6px}
+.sec{padding:12px 16px 4px;color:var(--mut);font-size:13px}
+.srow{display:flex;align-items:center;gap:14px;padding:13px 16px;width:100%;text-align:start}
+.srow:active{background:var(--in)}
+.srow svg{width:24px;height:24px}
+.srow .t{flex:1;font-size:15px}
+.srow .t small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+.srow .c{color:var(--mut);font-size:22px}
+.srow.red{color:#f43f5e}
+.sfld{display:block;width:100%;padding:13px 14px;margin-top:10px;border-radius:12px;border:1px solid var(--line);background:var(--in)}
 </style>
 </head>
 <body>
@@ -127,6 +140,7 @@ svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke
     <div class="view" id="v-notif"></div>
     <div class="view" id="v-user"></div>
     <div class="view" id="v-prem"></div>
+    <div class="view" id="v-set"></div>
   </div>
   <div id="nav">
     <button data-t="home" aria-label="الرئيسية"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button><button data-t="reels" aria-label="ريلز"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg></button><button data-t="chats" aria-label="الرسائل"><svg viewBox="0 0 24 24"><path d="M21 3L3 10.5l7 3 3 7z"/><path d="M10 13.5L21 3"/></svg></button><button data-t="search" aria-label="استكشاف"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></button><button data-t="me" aria-label="ملفي"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button>
@@ -141,7 +155,7 @@ svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,reauthenticateWithCredential,EmailAuthProvider,updatePassword,deleteUser} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,doc,setDoc,getDoc,addDoc,updateDoc,collection,query,where,orderBy,limit,onSnapshot,startAt,endAt,serverTimestamp,getDocs,deleteDoc,getCountFromServer} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -206,9 +220,9 @@ onAuthStateChanged(auth,u=>{
 
 /* ---------- tabs ---------- */
 function show(t){
-  tab=t;["home","reels","search","chats","me","notif","user","prem"].forEach(v=>$("v-"+v).style.display=v===t?"block":"none");
+  tab=t;["home","reels","search","chats","me","notif","user","prem","set"].forEach(v=>$("v-"+v).style.display=v===t?"block":"none");
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
-  ({home:rHome,reels(){},user(){},prem:rPrem,search:rSearch,chats:rChats,me:rMe,notif:rNotif})[t]();
+  ({home:rHome,set(){},reels(){},user(){},prem:rPrem,search:rSearch,chats:rChats,me:rMe,notif:rNotif})[t]();
 }
 document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>show(b.dataset.t));
 $("bell").onclick=()=>show("notif");
@@ -324,7 +338,7 @@ async function rMe(){
   const cn=await counts(me.uid);
   if(tab!=="me")return;c.textContent="";
   const changePhoto=()=>pickPhoto(async d=>{if(!d)return;try{await setDoc(doc(db,"users",me.uid),{username:uname,photo:d},{merge:true})}catch(e){}rMe()});
-  const w=h("div","pf");w.appendChild(h("div","uh","@"+uname));
+  const w=h("div","pf"),hr=h("div","uh"),gb=h("button",null);gb.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';gb.style.color="var(--acc)";gb.setAttribute("aria-label","الإعدادات");gb.onclick=()=>openSet("main");hr.appendChild(h("span",null,"@"+uname));hr.appendChild(gb);w.appendChild(hr);
   const top=h("div","pft"),av=ava(uname,86,P.photo);
   av.style.cursor="pointer";av.onclick=changePhoto;
   top.appendChild(av);top.appendChild(statsRow(0,cn[0],cn[1]));w.appendChild(top);
@@ -332,7 +346,7 @@ async function rMe(){
   if(P.bio)w.appendChild(h("div","pb",P.bio));
   const acts=h("div","acts"),ed=h("button","btn g","تعديل الملف الشخصي"),sh=h("button","btn g","مشاركة الملف الشخصي");
   acts.appendChild(ed);acts.appendChild(sh);w.appendChild(acts);
-  const form=h("div","form");form.style.display="none";
+  const form=h("div","form");form.style.display=editOpen?"block":"none";editOpen=false;
   const ni=document.createElement("input");ni.placeholder="الاسم";ni.value=P.name||"";
   const bi=document.createElement("textarea");bi.placeholder="النبذة";bi.value=P.bio||"";
   const pb=h("button","btn g","📷 تغيير الصورة");pb.onclick=changePhoto;
@@ -346,6 +360,75 @@ async function rMe(){
   const ig=h("a","btn g","📷 تابع المطوّر على إنستغرام");ig.href=IG;ig.target="_blank";ig.rel="noopener noreferrer";w.appendChild(ig);
   const lo=h("button","btn g","تسجيل الخروج");lo.onclick=()=>signOut(auth);w.appendChild(lo);
   c.appendChild(w);
+}
+let editOpen=false,dip=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();dip=e});
+const sv_=p=>'<svg viewBox="0 0 24 24">'+p+'</svg>';
+const SI={
+ user:sv_('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>'),
+ lock:sv_('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+ bell:sv_('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>'),
+ send:sv_('<path d="M21 3L3 10.5l7 3 3 7z"/><path d="M10 13.5L21 3"/>'),
+ star:sv_('<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>'),
+ dl:sv_('<path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 20h16"/>'),
+ ref:sv_('<path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/>'),
+ ig:sv_('<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6"/>'),
+ info:sv_('<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6"/>'),
+ out:sv_('<path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M16 8l4 4-4 4M20 12H9"/>'),
+ trash:sv_('<path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13M9 7V4h6v3"/>')
+};
+function srow(c,i,t,fn,o){o=o||{};const b=h("button","srow"+(o.red?" red":"")),ic=document.createElement("span");ic.innerHTML=SI[i];b.appendChild(ic);
+  const tx=h("div","t",t);if(o.sub)tx.appendChild(h("small",null,o.sub));b.appendChild(tx);b.appendChild(h("span","c","‹"));b.onclick=fn;c.appendChild(b)}
+function ssec(c,t){c.appendChild(h("div","sep"));c.appendChild(h("div","sec",t))}
+function openSet(p){
+  p=p||"main";show("set");const c=$("v-set");c.textContent="";
+  const hd=h("div","sh"),bk=h("button",null,"→");bk.style.fontSize="22px";bk.onclick=()=>p==="main"?show("me"):openSet("main");
+  hd.appendChild(bk);hd.appendChild(h("h2",null,{main:"الإعدادات والنشاط",pass:"كلمة المرور",del:"حذف الحساب",about:"حول التطبيق"}[p]));c.appendChild(hd);
+  ({main:setMain,pass:setPass,del:setDel,about:setAbout})[p](c);
+}
+function setMain(c){
+  ssec(c,"حسابك");
+  srow(c,"user","تعديل الملف الشخصي",()=>{editOpen=true;show("me")},{sub:"الاسم والنبذة والصورة"});
+  srow(c,"lock","كلمة المرور والأمان",()=>openSet("pass"));
+  ssec(c,"كيف تستخدم التطبيق");
+  srow(c,"bell","الإشعارات",()=>show("notif"));
+  srow(c,"send","الرسائل",()=>show("chats"));
+  ssec(c,"الاشتراك");
+  srow(c,"star","سوريا بريميوم",()=>show("prem"),{sub:"الرد التلقائي، 13$ شهرياً"});
+  ssec(c,"التطبيق");
+  srow(c,"dl","تثبيت التطبيق على هاتفك",()=>{if(dip){dip.prompt();dip=null}else alert("افتح قائمة المتصفح ⋮ واختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»")});
+  srow(c,"ref","تحديث التطبيق",async()=>{try{for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister();for(const k of await caches.keys())await caches.delete(k)}catch(e){}location.reload()},{sub:"إذا ما ظهرت آخر التعديلات"});
+  ssec(c,"مساعدة");
+  srow(c,"ig","تابع المطوّر على إنستغرام",()=>window.open(IG,"_blank","noopener"));
+  srow(c,"info","حول التطبيق",()=>openSet("about"));
+  ssec(c,"تسجيل الدخول");
+  srow(c,"out","تسجيل الخروج",()=>signOut(auth));
+  srow(c,"trash","حذف الحساب",()=>openSet("del"),{red:true});
+}
+function fld(c,ph){const i=document.createElement("input");i.type="password";i.placeholder=ph;i.className="sfld";c.appendChild(i);return i}
+const reauth=pw=>reauthenticateWithCredential(auth.currentUser,EmailAuthProvider.credential(auth.currentUser.email,pw));
+function setPass(c){
+  const w=h("div","pf"),a=fld(w,"كلمة المرور الحالية"),b=fld(w,"كلمة المرور الجديدة"),d=fld(w,"تأكيد كلمة المرور الجديدة"),btn=h("button","btn","تغيير كلمة المرور"),out=h("div","pb","");out.style.marginTop="10px";
+  btn.onclick=async()=>{
+    if(b.value.length<6){out.textContent="الجديدة لازم 6 أحرف على الأقل";return}
+    if(b.value!==d.value){out.textContent="كلمتا المرور غير متطابقتين";return}
+    btn.disabled=true;
+    try{await reauth(a.value);await updatePassword(auth.currentUser,b.value);out.textContent="تم تغيير كلمة المرور ✓";a.value=b.value=d.value=""}
+    catch(e){out.textContent="كلمة المرور الحالية غلط"}
+    btn.disabled=false};
+  w.appendChild(btn);w.appendChild(out);c.appendChild(w);
+}
+function setDel(c){
+  const w=h("div","pf");w.appendChild(h("div","pb","سيتم حذف حسابك وملفك الشخصي نهائياً ولا يمكن التراجع عن ذلك. اكتب كلمة مرورك للتأكيد."));
+  const a=fld(w,"كلمة المرور"),btn=h("button","btn","حذف حسابي نهائياً"),out=h("div","pb","");btn.style.background="#e11d48";out.style.marginTop="10px";
+  btn.onclick=async()=>{btn.disabled=true;
+    try{await reauth(a.value);const u=auth.currentUser;try{await deleteDoc(doc(db,"users",u.uid))}catch(e){}await deleteUser(u)}
+    catch(e){out.textContent="كلمة المرور غلط أو فشل الحذف";btn.disabled=false}};
+  w.appendChild(btn);w.appendChild(out);c.appendChild(w);
+}
+function setAbout(c){
+  const w=h("div","pf");w.appendChild(h("div","pn","سوريا 🇸🇾"));
+  const t=h("div","pb","الإصدار 1.0\nتطبيق تواصل ودردشة.\nالمطوّر: @a.__h811");t.style.marginTop="8px";w.appendChild(t);c.appendChild(w);
 }
 const DM="https://ig.me/m/a.__h811",DAY=864e5,DEFMSG="أهلاً! أنا مو متواجد هلق، برد عليك بأقرب وقت 🙏";
 async function getPrem(uid){
