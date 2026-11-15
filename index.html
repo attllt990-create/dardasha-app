@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>سوريا 🇸🇾</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3797f0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="سوريا">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
 <style>
 :root{--bg:#fff;--fg:#111;--mut:#8e8e8e;--line:#efefef;--in:#efefef;--out:#3797f0;color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#000;--fg:#f5f5f5;--mut:#a8a8a8;--line:#262626;--in:#262626;color-scheme:dark}}
@@ -40,6 +48,9 @@ input,textarea{font:inherit;font-size:16px;color:var(--fg)}
 .acts{display:flex;gap:8px;margin-top:14px}
 .btn{background:var(--out);color:#fff;padding:11px;border-radius:8px;font-weight:700;width:100%;margin-top:10px}
 .btn.g{background:var(--in);color:var(--fg)}
+a.btn{display:block;text-align:center;text-decoration:none;margin-top:10px}
+.pu{color:var(--mut);font-size:13px;margin-top:2px}
+a.ig{color:var(--out);font-size:14px;font-weight:700;text-decoration:none}
 .acts .btn{margin:0;flex:1;padding:8px;font-size:14px}
 .form{margin-top:12px}
 .form input,.form textarea{display:block;width:100%;padding:10px;margin-bottom:8px;border-radius:10px;border:0;background:var(--in)}
@@ -68,7 +79,8 @@ header h1{font-size:16px}
 <input id="ap" type="password" placeholder="كلمة المرور" autocomplete="current-password" dir="ltr">
 <input id="ac" type="password" placeholder="تأكيد كلمة المرور" dir="ltr" style="display:none">
 <div id="err"></div><button id="go" class="btn">تسجيل الدخول</button>
-<div class="sw"><span id="swt">ما عندك حساب؟</span> <button id="swb">إنشاء حساب</button></div></div></div>
+<div class="sw"><span id="swt">ما عندك حساب؟</span> <button id="swb">إنشاء حساب</button></div>
+<a class="ig" href="https://www.instagram.com/a.__h811/" target="_blank" rel="noopener noreferrer">📷 تابع المطوّر على إنستغرام</a></div></div>
 
 <div class="screen" id="app">
   <div class="top"><div class="logo">سوريا 🇸🇾</div><button id="bell" aria-label="الإشعارات">🤍<i id="dot"></i></button></div>
@@ -78,6 +90,7 @@ header h1{font-size:16px}
     <div class="view" id="v-chats"></div>
     <div class="view" id="v-me"></div>
     <div class="view" id="v-notif"></div>
+    <div class="view" id="v-user"></div>
   </div>
   <div id="nav">
     <button data-t="home">🏠</button><button data-t="search">🔍</button><button data-t="chats">💬</button><button data-t="me">👤</button>
@@ -93,7 +106,7 @@ header h1{font-size:16px}
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {getFirestore,doc,setDoc,getDoc,addDoc,updateDoc,collection,query,where,orderBy,limit,onSnapshot,startAt,endAt,serverTimestamp,getDocs} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {getFirestore,doc,setDoc,getDoc,addDoc,updateDoc,collection,query,where,orderBy,limit,onSnapshot,startAt,endAt,serverTimestamp,getDocs,deleteDoc,getCountFromServer} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD-v2mci9SakvXhIcvBaSsq5p5wrZ7GhP0",
@@ -109,7 +122,7 @@ const h=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nul
 const mail=u=>u+"@users.syria.app";
 let me=null,uname="",mode="login",subs=[],chats=[],notifs=[],cur=null,msgSub=null,tab="home";
 
-function ava(n,s){const a=h("div","av",(n||"?")[0].toUpperCase());let k=0;for(const ch of n||"")k+=ch.charCodeAt(0);
+function ava(n,s,p){if(p){const i=document.createElement("img");i.src=p;i.className="av";i.style.cssText=`width:${s}px;height:${s}px;object-fit:cover`;return i}const a=h("div","av",(n||"?")[0].toUpperCase());let k=0;for(const ch of n||"")k+=ch.charCodeAt(0);
   a.style.cssText=`width:${s}px;height:${s}px;font-size:${s/2.2}px;background:hsl(${k*47%360},65%,78%)`;return a}
 const scr=n=>["load","auth","app","chat"].forEach(i=>$(i).style.display=i===n?"flex":"none");
 const chatId=(a,b)=>[a,b].sort().join("_");
@@ -157,9 +170,9 @@ onAuthStateChanged(auth,u=>{
 
 /* ---------- tabs ---------- */
 function show(t){
-  tab=t;["home","search","chats","me","notif"].forEach(v=>$("v-"+v).style.display=v===t?"block":"none");
+  tab=t;["home","search","chats","me","notif","user"].forEach(v=>$("v-"+v).style.display=v===t?"block":"none");
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
-  ({home(){},search:rSearch,chats:rChats,me:rMe,notif:rNotif})[t]();
+  ({home(){},user(){},search:rSearch,chats:rChats,me:rMe,notif:rNotif})[t]();
 }
 document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>show(b.dataset.t));
 $("bell").onclick=()=>show("notif");
@@ -174,9 +187,9 @@ async function rSearch(){
     const list=s.docs.map(d=>({uid:d.id,...d.data()})).filter(x=>x.uid!==me.uid);
     if(!list.length){r.appendChild(h("div","empty","ما لقينا حدا بهالاسم"));return}
     list.forEach(o=>{
-      const b=h("button","row");b.appendChild(ava(o.username,48));
+      const b=h("button","row");b.appendChild(ava(o.username,48,o.photo));
       const t=h("div","tx");t.appendChild(h("b",null,o.username));t.appendChild(h("span",null,o.name||"اضغط لبدء دردشة"));b.appendChild(t);
-      b.onclick=()=>openChat(o.uid,o.username);r.appendChild(b);
+      b.onclick=()=>openUser(o.uid);r.appendChild(b);
     });
   }catch(e){r.appendChild(h("div","empty","تعذّر البحث، تأكد من الاتصال"))}
 }
@@ -228,27 +241,68 @@ function rNotif(){
 }
 
 /* ---------- profile ---------- */
+const IG="https://www.instagram.com/a.__h811/";
+async function counts(uid){
+  try{const r=await Promise.all([getCountFromServer(collection(db,"users",uid,"followers")),getCountFromServer(collection(db,"users",uid,"following"))]);return [r[0].data().count,r[1].data().count]}catch(e){return [0,0]}
+}
+function statsRow(p,f,g){const st=h("div","stats2");[["منشورات",p],["متابعون",f],["يتابع",g]].forEach(s=>{const d=h("div");d.appendChild(h("b",null,String(s[1])));d.appendChild(h("span",null,s[0]));st.appendChild(d)});return st}
+function pickPhoto(cb){
+  const f=document.createElement("input");f.type="file";f.accept="image/*";
+  f.onchange=()=>{const file=f.files[0];if(!file)return;const img=new Image(),u=URL.createObjectURL(file);
+    img.onload=()=>{const S=256,c=document.createElement("canvas");c.width=c.height=S;const x=c.getContext("2d"),m=Math.min(img.width,img.height);
+      x.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,S,S);URL.revokeObjectURL(u);cb(c.toDataURL("image/jpeg",0.8))};
+    img.onerror=()=>cb(null);img.src=u};
+  f.click();
+}
 async function rMe(){
   const c=$("v-me");c.textContent="";
-  let P={name:"",bio:""};try{const s=await getDoc(doc(db,"users",me.uid));if(s.exists())P=s.data()}catch(e){}
+  let P={name:"",bio:"",photo:""};try{const s=await getDoc(doc(db,"users",me.uid));if(s.exists())P=s.data()}catch(e){}
+  const cn=await counts(me.uid);
   if(tab!=="me")return;c.textContent="";
-  const w=h("div","pf"),top=h("div","pft");top.appendChild(ava(uname,86));
-  const st=h("div","stats2");[["منشورات",0],["متابعون",0],["يتابع",0]].forEach(s=>{const d=h("div");d.appendChild(h("b",null,String(s[1])));d.appendChild(h("span",null,s[0]));st.appendChild(d)});
-  top.appendChild(st);w.appendChild(top);
-  w.appendChild(h("div","pn",P.name||uname));
+  const changePhoto=()=>pickPhoto(async d=>{if(!d)return;try{await setDoc(doc(db,"users",me.uid),{username:uname,photo:d},{merge:true})}catch(e){}rMe()});
+  const w=h("div","pf"),top=h("div","pft"),av=ava(uname,86,P.photo);
+  av.style.cursor="pointer";av.onclick=changePhoto;
+  top.appendChild(av);top.appendChild(statsRow(0,cn[0],cn[1]));w.appendChild(top);
+  w.appendChild(h("div","pn",P.name||uname));w.appendChild(h("div","pu","@"+uname));
   if(P.bio)w.appendChild(h("div","pb",P.bio));
   const acts=h("div","acts"),ed=h("button","btn g","تعديل الملف الشخصي"),lo=h("button","btn g","تسجيل الخروج");
   acts.appendChild(ed);acts.appendChild(lo);w.appendChild(acts);
   const form=h("div","form");form.style.display="none";
   const ni=document.createElement("input");ni.placeholder="الاسم";ni.value=P.name||"";
   const bi=document.createElement("textarea");bi.placeholder="النبذة";bi.value=P.bio||"";
-  const sb=h("button","btn","حفظ");form.appendChild(ni);form.appendChild(bi);form.appendChild(sb);w.appendChild(form);
+  const pb=h("button","btn g","📷 تغيير الصورة");pb.onclick=changePhoto;
+  const sb=h("button","btn","حفظ");
+  form.appendChild(ni);form.appendChild(bi);form.appendChild(pb);form.appendChild(sb);w.appendChild(form);
   ed.onclick=()=>form.style.display=form.style.display==="none"?"block":"none";
-  sb.onclick=async()=>{try{await setDoc(doc(db,"users",me.uid),{username:uname,name:ni.value.trim().slice(0,30),bio:bi.value.trim().slice(0,150)});rMe()}catch(e){sb.textContent="فشل الحفظ"}};
+  sb.onclick=async()=>{try{await setDoc(doc(db,"users",me.uid),{username:uname,name:ni.value.trim().slice(0,30),bio:bi.value.trim().slice(0,150)},{merge:true});rMe()}catch(e){sb.textContent="فشل الحفظ"}};
   lo.onclick=()=>signOut(auth);
   const pr=h("button","btn g","⭐ بريميوم: الرد التلقائي (قريباً)");pr.disabled=true;w.appendChild(pr);
+  const ig=h("a","btn g","📷 تابع المطوّر على إنستغرام");ig.href=IG;ig.target="_blank";ig.rel="noopener noreferrer";w.appendChild(ig);
   c.appendChild(w);
 }
+async function openUser(uid){
+  show("user");const c=$("v-user");c.textContent="";c.appendChild(h("div","empty","..."));
+  let P=null;try{const s=await getDoc(doc(db,"users",uid));if(s.exists())P=s.data()}catch(e){}
+  if(!P){c.textContent="";c.appendChild(h("div","empty","تعذّر تحميل الحساب"));return}
+  const cn=await counts(uid);let isF=false;
+  try{isF=(await getDoc(doc(db,"users",me.uid,"following",uid))).exists()}catch(e){}
+  if(tab!=="user")return;c.textContent="";
+  const bk=h("button",null,"→ رجوع");bk.style.cssText="font-size:16px;padding:12px 16px";bk.onclick=()=>show("search");c.appendChild(bk);
+  const w=h("div","pf"),top=h("div","pft");top.appendChild(ava(P.username,86,P.photo));top.appendChild(statsRow(0,cn[0],cn[1]));w.appendChild(top);
+  w.appendChild(h("div","pn",P.name||P.username));w.appendChild(h("div","pu","@"+P.username));
+  if(P.bio)w.appendChild(h("div","pb",P.bio));
+  const acts=h("div","acts"),fb=h("button",isF?"btn g":"btn",isF?"إلغاء المتابعة":"متابعة"),mb=h("button","btn g","مراسلة");
+  fb.onclick=async()=>{fb.disabled=true;try{
+    if(isF){await deleteDoc(doc(db,"users",uid,"followers",me.uid));await deleteDoc(doc(db,"users",me.uid,"following",uid))}
+    else{await setDoc(doc(db,"users",uid,"followers",me.uid),{t:serverTimestamp()});await setDoc(doc(db,"users",me.uid,"following",uid),{t:serverTimestamp()});
+      addDoc(collection(db,"users",uid,"notifs"),{x:"@"+uname+" بدأ بمتابعتك",from:me.uid,t:serverTimestamp(),r:false}).catch(()=>{})}
+  }catch(e){}openUser(uid)};
+  mb.onclick=()=>openChat(uid,P.username);
+  acts.appendChild(fb);acts.appendChild(mb);w.appendChild(acts);c.appendChild(w);
+}
+</script>
+<script>
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 </script>
 </body>
 </html>
