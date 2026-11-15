@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>سوريا 🇸🇾</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3797f0">
+<meta name="theme-color" content="#0b1117">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="سوريا">
@@ -70,11 +70,45 @@ header h1{font-size:16px}
 #err{color:#e11d48;font-size:13px;min-height:18px}
 .sw{font-size:14px;color:var(--mut)}
 .sw button{color:var(--out);font-weight:700}
+
+:root{--bg:#0b1117;--fg:#f1f5f9;--mut:#7d8b99;--line:#1b2733;--in:#151e29;--out:#0d9488;--acc:#2dd4bf;color-scheme:dark}
+svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.gt{background:linear-gradient(90deg,#5eead4,#22d3ee,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo{text-align:center;letter-spacing:.5px}
+.sp{width:38px}
+#bell{font-size:0;padding:4px 6px;color:var(--acc);width:38px}
+#dot{background:#f43f5e;top:2px;right:6px}
+#nav button{opacity:1;font-size:0;padding:12px 0;color:var(--mut);display:flex;justify-content:center}
+#nav button.on{color:var(--acc)}
+#nav button.on svg{stroke-width:2.3}
+.btn{background:linear-gradient(135deg,#0d9488,#0891b2);border-radius:12px;box-shadow:0 6px 18px #0d948833}
+.btn.g{background:var(--in);box-shadow:none;border:1px solid var(--line)}
+.btn.gold{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1205;box-shadow:none}
+.m.me{background:linear-gradient(135deg,#0d9488,#0e7490)}
+.send,.sw button,a.ig{color:var(--acc)}
+.field,.form input,.form textarea{border:1px solid var(--line)}
+#auth{background:radial-gradient(circle at 50% -5%,#0f766e66,transparent 55%),var(--bg)}
+.box{gap:12px}
+.box .logo{font-size:46px;margin-bottom:2px;font-weight:900}
+.tag{color:var(--mut);font-size:14px;margin-bottom:14px}
+.box input{padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--in)}
+.box input:focus{outline:0;border-color:var(--acc)}
+.sw{margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--in)}
+.stories{display:flex;gap:14px;padding:14px 16px;overflow-x:auto}
+.st{flex:0 0 auto;width:72px;text-align:center;font-size:12px;color:var(--mut)}
+.ring{width:72px;height:72px;border-radius:50%;padding:3px;background:linear-gradient(45deg,#f9a825,#e1306c,#8b5cf6);position:relative;margin-bottom:5px}
+.ring.me{background:var(--line)}
+.ring .av,.ring img{border:3px solid var(--bg)}
+.plus{position:absolute;bottom:-2px;left:-2px;width:22px;height:22px;border-radius:50%;background:var(--out);color:#fff;font-style:normal;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);line-height:1}
+.uh{font-size:20px;font-weight:800;color:var(--acc);margin-bottom:14px}
+.ptabs{display:flex;border-bottom:1px solid var(--line);margin:20px -16px 0}
+.ptabs button{flex:1;padding:12px 0;color:var(--mut);display:flex;justify-content:center;border-bottom:2px solid transparent}
+.ptabs button.on{color:var(--acc);border-color:var(--acc)}
 </style>
 </head>
 <body>
-<div class="screen" id="load" style="display:flex"><div class="box"><h2 class="logo">سوريا 🇸🇾</h2></div></div>
-<div class="screen" id="auth"><div class="box"><h2 class="logo">سوريا 🇸🇾</h2>
+<div class="screen" id="load" style="display:flex"><div class="box"><h2 class="logo"><span class="gt">سوريا</span> 🇸🇾</h2></div></div>
+<div class="screen" id="auth"><div class="box"><h2 class="logo"><span class="gt">سوريا</span> 🇸🇾</h2><div class="tag">تواصل، شارك، وتابع ناسك</div>
 <input id="au" placeholder="اسم المستخدم" autocapitalize="none" autocomplete="username" dir="ltr">
 <input id="ap" type="password" placeholder="كلمة المرور" autocomplete="current-password" dir="ltr">
 <input id="ac" type="password" placeholder="تأكيد كلمة المرور" dir="ltr" style="display:none">
@@ -83,17 +117,19 @@ header h1{font-size:16px}
 <a class="ig" href="https://www.instagram.com/a.__h811/" target="_blank" rel="noopener noreferrer">📷 تابع المطوّر على إنستغرام</a></div></div>
 
 <div class="screen" id="app">
-  <div class="top"><div class="logo">سوريا 🇸🇾</div><button id="bell" aria-label="الإشعارات">🤍<i id="dot"></i></button></div>
+  <div class="top"><span class="sp"></span><div class="logo"><span class="gt">سوريا</span> 🇸🇾</div><button id="bell" aria-label="الإشعارات"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z"/></svg><i id="dot"></i></button></div>
   <div id="main">
     <div class="view" id="v-home"><div class="empty">المنشورات والريلز قريباً 🎬</div></div>
+    <div class="view" id="v-reels"><div class="empty">الريلز قريباً 🎬</div></div>
     <div class="view" id="v-search"><input class="field" id="sq" placeholder="ابحث عن مستخدم" dir="ltr" autocapitalize="none"><div id="sres"></div></div>
     <div class="view" id="v-chats"></div>
     <div class="view" id="v-me"></div>
     <div class="view" id="v-notif"></div>
     <div class="view" id="v-user"></div>
+    <div class="view" id="v-prem"></div>
   </div>
   <div id="nav">
-    <button data-t="home">🏠</button><button data-t="search">🔍</button><button data-t="chats">💬</button><button data-t="me">👤</button>
+    <button data-t="home" aria-label="الرئيسية"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button><button data-t="reels" aria-label="ريلز"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg></button><button data-t="chats" aria-label="الرسائل"><svg viewBox="0 0 24 24"><path d="M21 3L3 10.5l7 3 3 7z"/><path d="M10 13.5L21 3"/></svg></button><button data-t="search" aria-label="استكشاف"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></button><button data-t="me" aria-label="ملفي"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></button>
   </div>
 </div>
 
@@ -170,9 +206,9 @@ onAuthStateChanged(auth,u=>{
 
 /* ---------- tabs ---------- */
 function show(t){
-  tab=t;["home","search","chats","me","notif","user"].forEach(v=>$("v-"+v).style.display=v===t?"block":"none");
+  tab=t;["home","reels","search","chats","me","notif","user","prem"].forEach(v=>$("v-"+v).style.display=v===t?"block":"none");
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
-  ({home(){},user(){},search:rSearch,chats:rChats,me:rMe,notif:rNotif})[t]();
+  ({home:rHome,reels(){},user(){},prem:rPrem,search:rSearch,chats:rChats,me:rMe,notif:rNotif})[t]();
 }
 document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>show(b.dataset.t));
 $("bell").onclick=()=>show("notif");
@@ -208,22 +244,23 @@ function rChats(){
     b.onclick=()=>openChat(ou,on);c.appendChild(b);
   });
 }
-function bubble(f,m){const d=h("div","m "+(f===me.uid?"me":"th"),m);$("msgs").appendChild(d);$("msgs").scrollTop=$("msgs").scrollHeight}
+function bubble(f,m,a){const d=h("div","m "+(f===me.uid?"me":"th"),a?"🤖 "+m:m);$("msgs").appendChild(d);$("msgs").scrollTop=$("msgs").scrollHeight}
 function openChat(ouid,oname){
   cur={uid:ouid,username:oname};$("hname").textContent=oname;$("hav").textContent="";$("hav").appendChild(ava(oname,36));
   $("msgs").textContent="";scr("chat");
   if(msgSub)msgSub();
   msgSub=onSnapshot(query(collection(db,"chats",chatId(me.uid,ouid),"messages"),orderBy("t","asc"),limit(200)),s=>{
-    $("msgs").textContent="";s.docs.forEach(d=>bubble(d.data().from,d.data().m))},()=>{});
+    $("msgs").textContent="";let lc=null;s.docs.forEach(d=>{const x=d.data();bubble(x.from,x.m,x.auto);if(cur&&x.from===cur.uid)lc=x});if(cur)cur.lastCur=lc},()=>{});
 }
 $("back").onclick=()=>{if(msgSub)msgSub();msgSub=null;cur=null;scr("app");show("chats")};
 async function send(){
   const v=$("inp").value.trim();if(!v||!cur)return;$("inp").value="";
-  const id=chatId(me.uid,cur.uid);
+  const id=chatId(me.uid,cur.uid),lc=cur.lastCur,ou=cur.uid;
   try{
     await setDoc(doc(db,"chats",id),{members:[me.uid,cur.uid],names:{[me.uid]:uname,[cur.uid]:cur.username},last:v,t:serverTimestamp()});
     await addDoc(collection(db,"chats",id,"messages"),{from:me.uid,m:v,t:serverTimestamp()});
     addDoc(collection(db,"users",cur.uid,"notifs"),{x:"@"+uname+" أرسل لك رسالة",from:me.uid,t:serverTimestamp(),r:false}).catch(()=>{});
+    if(!lc||!lc.auto){try{const p=await getPrem(ou);if(p.exp>Date.now()&&p.on&&p.msg)await addDoc(collection(db,"chats",id,"messages"),{from:ou,m:p.msg,auto:true,t:serverTimestamp()})}catch(e){}}
   }catch(e){bubble(me.uid,"⚠️ فشل الإرسال")}
 }
 $("send").onclick=send;
@@ -254,19 +291,47 @@ function pickPhoto(cb){
     img.onerror=()=>cb(null);img.src=u};
   f.click();
 }
+const IC={
+ grid:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+ reels:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg>',
+ tag:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><circle cx="12" cy="10" r="3"/><path d="M7 18c1-3 3-4 5-4s4 1 5 4"/></svg>'
+};
+function profBody(w){
+  const t=h("div","ptabs");
+  ["grid","reels","tag"].forEach((k,i)=>{const b=h("button",i?"":"on");b.innerHTML=IC[k];
+    b.onclick=()=>{t.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on")};t.appendChild(b)});
+  w.appendChild(t);w.appendChild(h("div","empty","ما في منشورات بعد"));
+}
+async function rHome(){
+  const c=$("v-home");
+  let P={};try{const s=await getDoc(doc(db,"users",me.uid));if(s.exists())P=s.data()}catch(e){}
+  const row=h("div","stories");
+  const mk=(name,photo,fn,plus)=>{const b=h("button","st"),r=h("div",plus?"ring me":"ring");r.appendChild(ava(name,66,photo));
+    if(plus)r.appendChild(h("i","plus","+"));b.appendChild(r);b.appendChild(h("span",null,name.length>10?name.slice(0,9)+"…":name));b.onclick=fn;return b};
+  row.appendChild(mk("ملفك",P.photo,()=>show("me"),true));
+  try{
+    const f=await getDocs(query(collection(db,"users",me.uid,"following"),limit(15)));
+    const us=await Promise.all(f.docs.map(d=>getDoc(doc(db,"users",d.id)).then(s=>s.exists()?{id:d.id,...s.data()}:null)));
+    us.filter(Boolean).forEach(u=>row.appendChild(mk(u.username,u.photo,()=>openUser(u.id))));
+  }catch(e){}
+  if(tab!=="home")return;
+  c.textContent="";c.appendChild(row);
+  c.appendChild(h("div","empty","المنشورات والريلز قريباً 🎬\nتابع ناس من 🧭 وبتظهر دواليبهم فوق"));
+}
 async function rMe(){
   const c=$("v-me");c.textContent="";
   let P={name:"",bio:"",photo:""};try{const s=await getDoc(doc(db,"users",me.uid));if(s.exists())P=s.data()}catch(e){}
   const cn=await counts(me.uid);
   if(tab!=="me")return;c.textContent="";
   const changePhoto=()=>pickPhoto(async d=>{if(!d)return;try{await setDoc(doc(db,"users",me.uid),{username:uname,photo:d},{merge:true})}catch(e){}rMe()});
-  const w=h("div","pf"),top=h("div","pft"),av=ava(uname,86,P.photo);
+  const w=h("div","pf");w.appendChild(h("div","uh","@"+uname));
+  const top=h("div","pft"),av=ava(uname,86,P.photo);
   av.style.cursor="pointer";av.onclick=changePhoto;
   top.appendChild(av);top.appendChild(statsRow(0,cn[0],cn[1]));w.appendChild(top);
-  w.appendChild(h("div","pn",P.name||uname));w.appendChild(h("div","pu","@"+uname));
+  w.appendChild(h("div","pn",P.name||uname));
   if(P.bio)w.appendChild(h("div","pb",P.bio));
-  const acts=h("div","acts"),ed=h("button","btn g","تعديل الملف الشخصي"),lo=h("button","btn g","تسجيل الخروج");
-  acts.appendChild(ed);acts.appendChild(lo);w.appendChild(acts);
+  const acts=h("div","acts"),ed=h("button","btn g","تعديل الملف الشخصي"),sh=h("button","btn g","مشاركة الملف الشخصي");
+  acts.appendChild(ed);acts.appendChild(sh);w.appendChild(acts);
   const form=h("div","form");form.style.display="none";
   const ni=document.createElement("input");ni.placeholder="الاسم";ni.value=P.name||"";
   const bi=document.createElement("textarea");bi.placeholder="النبذة";bi.value=P.bio||"";
@@ -275,9 +340,56 @@ async function rMe(){
   form.appendChild(ni);form.appendChild(bi);form.appendChild(pb);form.appendChild(sb);w.appendChild(form);
   ed.onclick=()=>form.style.display=form.style.display==="none"?"block":"none";
   sb.onclick=async()=>{try{await setDoc(doc(db,"users",me.uid),{username:uname,name:ni.value.trim().slice(0,30),bio:bi.value.trim().slice(0,150)},{merge:true});rMe()}catch(e){sb.textContent="فشل الحفظ"}};
-  lo.onclick=()=>signOut(auth);
-  const pr=h("button","btn g","⭐ بريميوم: الرد التلقائي (قريباً)");pr.disabled=true;w.appendChild(pr);
+  sh.onclick=async()=>{const u=location.href.split("#")[0];try{if(navigator.share)await navigator.share({title:"سوريا",text:"@"+uname+" على سوريا",url:u});else{await navigator.clipboard.writeText(u);sh.textContent="تم نسخ الرابط ✓"}}catch(e){}};
+  profBody(w);
+  const pr=h("button","btn gold","⭐ بريميوم: الرد التلقائي");pr.onclick=()=>show("prem");w.appendChild(pr);
   const ig=h("a","btn g","📷 تابع المطوّر على إنستغرام");ig.href=IG;ig.target="_blank";ig.rel="noopener noreferrer";w.appendChild(ig);
+  const lo=h("button","btn g","تسجيل الخروج");lo.onclick=()=>signOut(auth);w.appendChild(lo);
+  c.appendChild(w);
+}
+const DM="https://ig.me/m/a.__h811",DAY=864e5,DEFMSG="أهلاً! أنا مو متواجد هلق، برد عليك بأقرب وقت 🙏";
+async function getPrem(uid){
+  let exp=0,g={on:false,msg:DEFMSG};
+  try{const a=await getDoc(doc(db,"users",uid,"premium","status"));if(a.exists())exp=a.data().exp||0}catch(e){}
+  try{const b=await getDoc(doc(db,"users",uid,"premium","settings"));if(b.exists())g={...g,...b.data()}}catch(e){}
+  return {exp,on:!!g.on,msg:g.msg||DEFMSG};
+}
+async function rPrem(){
+  const c=$("v-prem");c.textContent="";
+  const P=await getPrem(me.uid);let adm=false;
+  try{adm=(await getDoc(doc(db,"admins",me.uid))).exists()}catch(e){}
+  if(tab!=="prem")return;c.textContent="";
+  const w=h("div","pf"),bk=h("button",null,"→ رجوع");bk.style.cssText="font-size:16px;margin-bottom:10px";bk.onclick=()=>show("me");w.appendChild(bk);
+  w.appendChild(h("h2",null,"⭐ سوريا بريميوم"));
+  const d=h("div","pb","الرد التلقائي: لما حدا يراسلك وأنت مو متواجد، البوت بيرد عنك فوراً برسالتك.");d.style.margin="8px 0";w.appendChild(d);
+  w.appendChild(h("div","pn","السعر: 13$ شهرياً"));
+  if(P.exp>Date.now()){
+    const ok=h("div","pb","✅ الاشتراك مفعّل لحد "+new Date(P.exp).toLocaleDateString("ar"));ok.style.margin="8px 0";w.appendChild(ok);
+    const f=h("div","form"),tg=h("button","btn",P.on?"الرد التلقائي: مفعّل ✓ (اضغط للإيقاف)":"الرد التلقائي: متوقف (اضغط للتشغيل)");
+    tg.onclick=async()=>{try{await setDoc(doc(db,"users",me.uid,"premium","settings"),{on:!P.on,msg:P.msg},{merge:true})}catch(e){}rPrem()};
+    const ta=document.createElement("textarea");ta.value=P.msg;ta.placeholder="رسالة الرد التلقائي";
+    const sm=h("button","btn g","حفظ الرسالة");
+    sm.onclick=async()=>{try{await setDoc(doc(db,"users",me.uid,"premium","settings"),{on:P.on,msg:ta.value.trim().slice(0,300)||DEFMSG},{merge:true});sm.textContent="تم الحفظ ✓"}catch(e){sm.textContent="فشل الحفظ"}};
+    f.appendChild(tg);f.appendChild(ta);f.appendChild(sm);w.appendChild(f);
+  }else{
+    const st=h("div","pb","للاشتراك: اضغط الزر وراسلني على إنستغرام، واكتب لي اسم حسابك: @"+uname+"\nبعد الدفع بفعّل لك الاشتراك وبيجيك إشعار هون.");st.style.margin="10px 0";w.appendChild(st);
+    const a=h("a","btn","📷 اشترك عبر إنستغرام");a.href=DM;a.target="_blank";a.rel="noopener noreferrer";w.appendChild(a);
+  }
+  if(adm){
+    const ap=h("div","form");ap.style.marginTop="28px";ap.appendChild(h("div","pn","🛠 لوحة المشرف"));
+    const ui=document.createElement("input");ui.placeholder="اسم مستخدم المشترك";ui.dir="ltr";ui.autocapitalize="none";ui.style.marginTop="8px";
+    const out=h("div","pb","");
+    const find=async()=>{const u=ui.value.trim().toLowerCase().replace(/^@/,"");if(!u){out.textContent="اكتب اسم المستخدم";return null}
+      const s=await getDocs(query(collection(db,"users"),where("username","==",u),limit(1)));
+      if(s.empty){out.textContent="ما لقيت هالحساب";return null}return s.docs[0].id};
+    const on=h("button","btn","تفعيل 30 يوم"),off=h("button","btn g","إلغاء الاشتراك");
+    on.onclick=async()=>{try{const t=await find();if(!t)return;const p=await getPrem(t),e=Math.max(Date.now(),p.exp)+30*DAY;
+      await setDoc(doc(db,"users",t,"premium","status"),{exp:e});
+      addDoc(collection(db,"users",t,"notifs"),{x:"تم تفعيل اشتراكك ⭐",from:me.uid,t:serverTimestamp(),r:false}).catch(()=>{});
+      out.textContent="تم التفعيل لحد "+new Date(e).toLocaleDateString("ar")}catch(e){out.textContent="فشل التفعيل"}};
+    off.onclick=async()=>{try{const t=await find();if(!t)return;await setDoc(doc(db,"users",t,"premium","status"),{exp:0});out.textContent="تم الإلغاء"}catch(e){out.textContent="فشل الإلغاء"}};
+    ap.appendChild(ui);ap.appendChild(on);ap.appendChild(off);ap.appendChild(out);w.appendChild(ap);
+  }
   c.appendChild(w);
 }
 async function openUser(uid){
@@ -298,7 +410,7 @@ async function openUser(uid){
       addDoc(collection(db,"users",uid,"notifs"),{x:"@"+uname+" بدأ بمتابعتك",from:me.uid,t:serverTimestamp(),r:false}).catch(()=>{})}
   }catch(e){}openUser(uid)};
   mb.onclick=()=>openChat(uid,P.username);
-  acts.appendChild(fb);acts.appendChild(mb);w.appendChild(acts);c.appendChild(w);
+  acts.appendChild(fb);acts.appendChild(mb);w.appendChild(acts);profBody(w);c.appendChild(w);
 }
 </script>
 <script>
