@@ -203,6 +203,9 @@ const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const $=i=>document.getElementById(i);
 const h=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const mail=u=>u+"@users.syria.app";
+var errLog=[];function logErr(e){try{errLog.unshift({t:Date.now(),m:(e&&(e.code||e.message))||String(e)});if(errLog.length>40)errLog.length=40}catch(x){}}
+window.addEventListener("unhandledrejection",e=>logErr(e.reason));window.addEventListener("error",e=>logErr(e.error||e.message));
+let fromChat=null;
 let me=null,uname="",mode="login",subs=[],chats=[],notifs=[],cur=null,msgSub=null,tab="home";
 
 function ava(n,s,p){if(p){const i=document.createElement("img");i.src=p;i.className="av";i.style.cssText=`width:${s}px;height:${s}px;object-fit:cover`;return i}const a=h("div","av",(n||"?")[0].toUpperCase());let k=0;for(const ch of n||"")k+=ch.charCodeAt(0);
@@ -233,8 +236,8 @@ async function submit(){
       const tk=await getDoc(doc(db,"usernames",u)).catch(()=>null);if(tk&&tk.exists()){$("go").disabled=false;return fail("اسم المستخدم مأخوذ، جرّب غيره")}
       const c=await createUserWithEmailAndPassword(auth,mail(u),p);
       await setDoc(doc(db,"users",c.user.uid),{username:u,name:"",bio:""});
-      await setDoc(doc(db,"usernames",u),{uid:c.user.uid,email:mail(u)}).catch(()=>{});
-    }else{let em=mail(u);try{const x=await getDoc(doc(db,"usernames",u));if(x.exists())em=x.data().email}catch(e){}await signInWithEmailAndPassword(auth,em,p)}
+      await setDoc(doc(db,"usernames",u),{uid:c.user.uid,email:mail(u)}).catch(logErr);
+    }else{let em=mail(u);try{const x=await getDoc(doc(db,"usernames",u));if(x.exists())em=x.data().email}catch(e){logErr(e)}await signInWithEmailAndPassword(auth,em,p)}
   }catch(e){fail(errMsg(e))}
   $("go").disabled=false;
 }
@@ -246,7 +249,7 @@ onAuthStateChanged(auth,u=>{
   subs.forEach(f=>f());subs=[];
   if(!u){me=null;setMode("login");$("ap").value="";$("ac").value="";scr("auth");return}
   me=u;uname=u.email.split("@")[0];$("ap").value="";$("ac").value="";
-  getDoc(doc(db,"users",u.uid)).then(x=>{if(x.exists()&&x.data().username)uname=x.data().username;getDoc(doc(db,"usernames",uname)).then(y=>{if(!y.exists())setDoc(doc(db,"usernames",uname),{uid:u.uid,email:u.email}).catch(()=>{})}).catch(()=>{})}).catch(()=>{});
+  getDoc(doc(db,"users",u.uid)).then(x=>{if(x.exists()&&x.data().username)uname=x.data().username;getDoc(doc(db,"usernames",uname)).then(y=>{if(!y.exists())setDoc(doc(db,"usernames",uname),{uid:u.uid,email:u.email}).catch(logErr)}).catch(logErr)}).catch(logErr);
   subs.push(onSnapshot(query(collection(db,"chats"),where("members","array-contains",u.uid)),s=>{
     chats=s.docs.map(d=>({id:d.id,...d.data()}));if(tab==="chats")rChats()},()=>{}));
   subs.push(onSnapshot(query(collection(db,"users",u.uid,"notifs"),orderBy("t","desc"),limit(30)),s=>{
@@ -256,7 +259,7 @@ onAuthStateChanged(auth,u=>{
 
 /* ---------- tabs ---------- */
 function show(t){
-  tab=t;document.querySelector(".top").style.display=t==="home"?"flex":"none";["home","reels","search","chats","me","notif","user","prem","set"].forEach(v=>$("v-"+v).style.display=v===t?"block":"none");
+  if(t!=="user")fromChat=null;tab=t;document.querySelector(".top").style.display=t==="home"?"flex":"none";["home","reels","search","chats","me","notif","user","prem","set"].forEach(v=>$("v-"+v).style.display=v===t?"block":"none");
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
   ({home:rHome,set(){},reels:rReels,user(){},prem:rPrem,search:rSearch,chats:rChats,me:rMe,notif:rNotif})[t]();
 }
@@ -316,6 +319,9 @@ function openChat(ouid,oname){
   msgSub=onSnapshot(query(collection(db,"chats",chatId(me.uid,ouid),"messages"),orderBy("t","asc"),limit(200)),s=>{
     $("msgs").textContent="";let lc=null;s.docs.forEach(d=>{const x={...d.data(),_id:d.id};bubble(x.from,x.m,x.auto,x);if(cur&&x.from===cur.uid)lc=x});if(cur)cur.lastCur=lc},()=>{});
 }
+function openFromChat(){if(!cur)return;fromChat={uid:cur.uid,username:cur.username};if(msgSub)msgSub();msgSub=null;scr("app");openUser(cur.uid)}
+$("hav").onclick=openFromChat;$("hname").onclick=openFromChat;
+$("hav").style.cursor=$("hname").style.cursor="pointer";
 $("back").onclick=()=>{if(rec){cancelled=true;rec.stop()}if(msgSub)msgSub();msgSub=null;cur=null;scr("app");show("chats")};
 async function sendRaw(v,extra){
   if(!cur)return;
@@ -323,8 +329,8 @@ async function sendRaw(v,extra){
   try{
     await setDoc(doc(db,"chats",id),{members:[me.uid,cur.uid],names:{[me.uid]:uname,[cur.uid]:cur.username},last,t:serverTimestamp()});
     await addDoc(collection(db,"chats",id,"messages"),{from:me.uid,m:v||"",t:serverTimestamp(),...(extra||{})});
-    addDoc(collection(db,"users",cur.uid,"notifs"),{x:"@"+uname+" أرسل لك رسالة",from:me.uid,t:serverTimestamp(),r:false}).catch(()=>{});
-    if(!lc||!lc.auto){try{const p=await getPrem(ou);if(p.exp>Date.now()&&p.on&&p.msg)await addDoc(collection(db,"chats",id,"messages"),{from:ou,m:p.msg,auto:true,t:serverTimestamp()})}catch(e){}}
+    addDoc(collection(db,"users",cur.uid,"notifs"),{x:"@"+uname+" أرسل لك رسالة",from:me.uid,t:serverTimestamp(),r:false}).catch(logErr);
+    if(!lc||!lc.auto){try{const p=await getPrem(ou);if(p.exp>Date.now()&&p.on&&p.msg)await addDoc(collection(db,"chats",id,"messages"),{from:ou,m:p.msg,auto:true,t:serverTimestamp()})}catch(e){logErr(e)}}
   }catch(e){bubble(me.uid,"⚠️ فشل الإرسال")}
 }
 async function send(){const v=$("inp").value.trim();if(!v||!cur)return;$("inp").value="";updBar();sendRaw(v)}
@@ -354,7 +360,7 @@ async function startRec(){
   rb.appendChild(icb(STOP_I,"#f43f5e",()=>{if(r.state!=="inactive")r.stop()}));
   showBar("rec");
   r.onstop=()=>{
-    clearInterval(recTick);clearInterval(recSamp);st.getTracks().forEach(t=>t.stop());try{ctx&&ctx.close()}catch(e){}rec=null;
+    clearInterval(recTick);clearInterval(recSamp);st.getTracks().forEach(t=>t.stop());try{ctx&&ctx.close()}catch(e){logErr(e)}rec=null;
     const blob=new Blob(recChunks,{type:r.mimeType||mt||"audio/webm"});
     if(cancelled||blob.size<1500){showBar("norm");return}
     showPreview(blob,Math.max(1,recT),recPeaks.slice());
@@ -405,7 +411,7 @@ async function openLimited(x,t){
   let m;if(t==="img"){m=document.createElement("img");m.src=x.data}else{m=document.createElement("video");m.src=x.data;m.controls=true;m.autoplay=true;m.playsInline=true}
   m.style.cssText="flex:1;min-height:0;width:100%;object-fit:contain";ov.appendChild(m);
   const nv=(x.views||0)+1;
-  try{await updateDoc(doc(db,"chats",chatId(me.uid,cur.uid),"messages",x._id),nv>=x.vm?{views:nv,data:""}:{views:nv})}catch(e){}
+  try{await updateDoc(doc(db,"chats",chatId(me.uid,cur.uid),"messages",x._id),nv>=x.vm?{views:nv,data:""}:{views:nv})}catch(e){logErr(e)}
 }
 async function sendPhoto(){
   const f=await pickFile("image/*");if(!f)return;const vm=await askView(f);if(vm===null)return;
@@ -438,7 +444,7 @@ function rNotif(){
   notifs.forEach(n=>{
     const b=h("div","row");b.appendChild(ava((n.x||"").split(" ")[0].slice(1),44));
     const t=h("div","tx");t.appendChild(h("b",null,n.x));t.appendChild(h("span",null,n.t?new Date(n.t.seconds*1000).toLocaleString("ar"):""));b.appendChild(t);c.appendChild(b);
-    if(!n.r)updateDoc(doc(db,"users",me.uid,"notifs",n.id),{r:true}).catch(()=>{});
+    if(!n.r)updateDoc(doc(db,"users",me.uid,"notifs",n.id),{r:true}).catch(logErr);
   });
 }
 
@@ -469,10 +475,10 @@ function profBody(w,uid){
 }
 async function rMe(){
   const c=$("v-me");c.textContent="";
-  let P={name:"",bio:"",photo:""};try{const s=await getDoc(doc(db,"users",me.uid));if(s.exists())P=s.data()}catch(e){}
+  let P={name:"",bio:"",photo:""};try{const s=await getDoc(doc(db,"users",me.uid));if(s.exists())P=s.data()}catch(e){logErr(e)}
   const cn=await counts(me.uid);
   if(tab!=="me")return;c.textContent="";
-  const changePhoto=()=>pickPhoto(async d=>{if(!d)return;try{await setDoc(doc(db,"users",me.uid),{username:uname,photo:d},{merge:true})}catch(e){}rMe()});
+  const changePhoto=()=>pickPhoto(async d=>{if(!d)return;try{await setDoc(doc(db,"users",me.uid),{username:uname,photo:d},{merge:true})}catch(e){logErr(e)}rMe()});
   const w=h("div","pf"),hr=h("div","uh"),gb=h("button",null);gb.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';gb.style.color="var(--acc)";gb.setAttribute("aria-label","الإعدادات");gb.onclick=()=>openSet("main");hr.appendChild(h("span",null,"@"+uname));const g2=h("div");g2.style.cssText="display:flex;gap:14px;align-items:center";const pl2=h("button",null);pl2.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';pl2.style.color="var(--acc)";pl2.setAttribute("aria-label","جديد");pl2.onclick=newSheet;g2.appendChild(pl2);g2.appendChild(gb);hr.appendChild(g2);w.appendChild(hr);
   const top=h("div","pft"),av=ava(uname,86,P.photo);
   av.style.cursor="pointer";av.onclick=changePhoto;
@@ -491,7 +497,7 @@ async function rMe(){
   ed.onclick=()=>form.style.display=form.style.display==="none"?"block":"none";
   sb.onclick=async()=>{sb.disabled=true;try{const er=await renameUser(ui.value.trim().toLowerCase());if(er){sb.textContent=er;sb.disabled=false;return}
     await setDoc(doc(db,"users",me.uid),{username:uname,name:ni.value.trim().slice(0,30),bio:bi.value.trim().slice(0,150)},{merge:true});peopleCache=null;rMe()}catch(e){sb.textContent="فشل الحفظ";sb.disabled=false}};
-  sh.onclick=async()=>{const u=location.href.split("#")[0];try{if(navigator.share)await navigator.share({title:"سوريا",text:"@"+uname+" على سوريا",url:u});else{await navigator.clipboard.writeText(u);sh.textContent="تم نسخ الرابط ✓"}}catch(e){}};
+  sh.onclick=async()=>{const u=location.href.split("#")[0];try{if(navigator.share)await navigator.share({title:"سوريا",text:"@"+uname+" على سوريا",url:u});else{await navigator.clipboard.writeText(u);sh.textContent="تم نسخ الرابط ✓"}}catch(e){logErr(e)}};
   profBody(w);
   const lo=h("button","btn g","تسجيل الخروج");lo.onclick=()=>signOut(auth);w.appendChild(lo);
   c.appendChild(w);
@@ -518,8 +524,8 @@ function ssec(c,t){c.appendChild(h("div","sep"));c.appendChild(h("div","sec",t))
 function openSet(p){
   p=p||"main";show("set");const c=$("v-set");c.textContent="";
   const hd=h("div","sh"),bk=h("button",null,"→");bk.style.fontSize="22px";bk.onclick=()=>p==="main"?show("me"):openSet("main");
-  hd.appendChild(bk);hd.appendChild(h("h2",null,{main:"الإعدادات والنشاط",pass:"كلمة المرور",del:"حذف الحساب",about:"حول التطبيق"}[p]));c.appendChild(hd);
-  ({main:setMain,pass:setPass,del:setDel,about:setAbout})[p](c);
+  hd.appendChild(bk);hd.appendChild(h("h2",null,{main:"الإعدادات والنشاط",pass:"كلمة المرور",del:"حذف الحساب",about:"حول التطبيق",diag:"تشخيص المشاكل"}[p]));c.appendChild(hd);
+  ({main:setMain,pass:setPass,del:setDel,about:setAbout,diag:setDiag})[p](c);
 }
 function setMain(c){
   ssec(c,"حسابك");
@@ -532,9 +538,10 @@ function setMain(c){
   srow(c,"star","سوريا بريميوم",()=>show("prem"),{sub:"الرد التلقائي، 13$ شهرياً"});
   ssec(c,"التطبيق");
   srow(c,"dl","تثبيت التطبيق على هاتفك",()=>{if(dip){dip.prompt();dip=null}else alert("افتح قائمة المتصفح ⋮ واختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»")});
-  srow(c,"ref","تحديث التطبيق",async()=>{try{for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister();for(const k of await caches.keys())await caches.delete(k)}catch(e){}location.reload()},{sub:"إذا ما ظهرت آخر التعديلات"});
+  srow(c,"ref","تحديث التطبيق",async()=>{try{for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister();for(const k of await caches.keys())await caches.delete(k)}catch(e){logErr(e)}location.reload()},{sub:"إذا ما ظهرت آخر التعديلات"});
   ssec(c,"مساعدة");
   srow(c,"ig","تابع المطوّر على إنستغرام",()=>window.open(IG,"_blank","noopener"));
+  srow(c,"info","تشخيص المشاكل",()=>openSet("diag"),{sub:"سجل الأخطاء وفحص القصص"});
   srow(c,"info","حول التطبيق",()=>openSet("about"));
   ssec(c,"تسجيل الدخول");
   srow(c,"out","تسجيل الخروج",()=>signOut(auth));
@@ -557,9 +564,30 @@ function setDel(c){
   const w=h("div","pf");w.appendChild(h("div","pb","سيتم حذف حسابك وملفك الشخصي نهائياً ولا يمكن التراجع عن ذلك. اكتب كلمة مرورك للتأكيد."));
   const a=fld(w,"كلمة المرور"),btn=h("button","btn","حذف حسابي نهائياً"),out=h("div","pb","");btn.style.background="#e11d48";out.style.marginTop="10px";
   btn.onclick=async()=>{btn.disabled=true;
-    try{await reauth(a.value);const u=auth.currentUser;try{await deleteDoc(doc(db,"users",u.uid))}catch(e){}await deleteUser(u)}
+    try{await reauth(a.value);const u=auth.currentUser;try{await deleteDoc(doc(db,"users",u.uid))}catch(e){logErr(e)}await deleteUser(u)}
     catch(e){out.textContent="كلمة المرور غلط أو فشل الحذف";btn.disabled=false}};
   w.appendChild(btn);w.appendChild(out);c.appendChild(w);
+}
+function setDiag(c){
+  const w=h("div","pf"),run=h("button","btn","فحص القصص والمتابعة"),out=h("div","pb","");
+  out.style.cssText="margin-top:12px;white-space:pre-wrap;direction:ltr;text-align:left;font-size:12px;overflow-wrap:anywhere";
+  run.onclick=async()=>{
+    run.disabled=true;out.textContent="جاري الفحص...";const L=["me: "+me.uid.slice(0,8)+"… @"+uname];
+    try{
+      const f=await getDocs(collection(db,"users",me.uid,"following"));L.push("following: "+f.size);
+      for(const id of [me.uid,...f.docs.map(d=>d.id)]){
+        let ln=id.slice(0,6)+"… ";
+        try{const u=await getDoc(doc(db,"users",id));ln+=u.exists()?"@"+(u.data().username||"?"):"NO USER DOC"}catch(e){ln+="user ERR "+(e.code||e.message)}
+        try{const q=await getDocs(query(collection(db,"users",id,"stories"),where("ms",">",Date.now()-DAYMS)));ln+=" | active stories: "+q.size}catch(e){ln+=" | stories ERR "+(e.code||e.message)}
+        try{const a=await getDocs(collection(db,"users",id,"stories"));ln+=" | all: "+a.size}catch(e){ln+=" | all ERR "+(e.code||e.message)}
+        L.push(ln)}
+    }catch(e){L.push("ERR "+(e.code||e.message))}
+    out.textContent=L.join("\n");run.disabled=false};
+  w.appendChild(run);w.appendChild(out);
+  const t=h("div","pn","آخر الأخطاء");t.style.marginTop="18px";w.appendChild(t);
+  const el=h("div","pb",errLog.length?errLog.map(x=>new Date(x.t).toLocaleTimeString("en-GB")+"  "+x.m).join("\n"):"ما في أخطاء مسجّلة");
+  el.style.cssText="white-space:pre-wrap;direction:ltr;text-align:left;font-size:12px;overflow-wrap:anywhere;margin-top:6px";w.appendChild(el);
+  c.appendChild(w);
 }
 function setAbout(c){
   const w=h("div","pf");w.appendChild(h("div","pn","سوريا 🇸🇾"));
@@ -580,7 +608,7 @@ function fileToJpeg(file,max,q){return new Promise((res,rej)=>{const img=new Ima
 function pickFile(acc){return new Promise(r=>{const f=document.createElement("input");f.type="file";f.accept=acc;f.onchange=()=>r(f.files[0]||null);f.click()})}
 function upVideo(file,cb){return new Promise((res,rej)=>{const x=new XMLHttpRequest(),fd=new FormData();fd.append("file",file);fd.append("upload_preset",PRESET);
   x.open("POST","https://api.cloudinary.com/v1_1/"+CLOUD+"/auto/upload");x.upload.onprogress=e=>{if(e.lengthComputable)cb(Math.round(e.loaded/e.total*100))};
-  x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){}if(j.secure_url)res(j.secure_url);else{let m=(j.error&&j.error.message)||("HTTP "+x.status);if(/preset/i.test(m))m+=" — تأكد إنو ml_default مضبوط Unsigned";rej(new Error(m))}};
+  x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){logErr(e)}if(j.secure_url)res(j.secure_url);else{let m=(j.error&&j.error.message)||("HTTP "+x.status);if(/preset/i.test(m))m+=" — تأكد إنو ml_default مضبوط Unsigned";rej(new Error(m))}};
   x.onerror=()=>rej(new Error("تعذّر الاتصال بـ Cloudinary"));x.send(fd)})}
 const thumb=u=>u.replace("/upload/","/upload/so_0,w_400,h_400,c_fill,f_jpg/").replace(/\.[a-z0-9]+$/i,".jpg");
 async function renameUser(nu){
@@ -588,19 +616,19 @@ async function renameUser(nu){
   if(!/^[a-z0-9._]{3,20}$/.test(nu))return"الاسم: 3-20 حرف إنكليزي أو أرقام";
   try{if((await getDoc(doc(db,"usernames",nu))).exists())return"اسم المستخدم مأخوذ"}catch(e){return"تعذّر التحقق"}
   try{await setDoc(doc(db,"usernames",nu),{uid:me.uid,email:me.email})}catch(e){return"تعذّر تغيير الاسم"}
-  try{await deleteDoc(doc(db,"usernames",uname))}catch(e){}
+  try{await deleteDoc(doc(db,"usernames",uname))}catch(e){logErr(e)}
   uname=nu;return null;
 }
 function seenSet(){try{return new Set(JSON.parse(localStorage.getItem("ca_seen")||"[]"))}catch(e){return new Set()}}
-function markSeen(id){try{const s=seenSet();s.add(id);localStorage.setItem("ca_seen",JSON.stringify([...s].slice(-300)))}catch(e){}}
+function markSeen(id){try{const s=seenSet();s.add(id);localStorage.setItem("ca_seen",JSON.stringify([...s].slice(-300)))}catch(e){logErr(e)}}
 async function loadPeople(){
   if(peopleCache&&Date.now()-peopleCache.t<20000)return peopleCache.v;
   const ids=[me.uid];
-  try{const f=await getDocs(query(collection(db,"users",me.uid,"following"),limit(15)));f.docs.forEach(d=>ids.push(d.id))}catch(e){}
+  try{const f=await getDocs(query(collection(db,"users",me.uid,"following"),limit(15)));f.docs.forEach(d=>ids.push(d.id))}catch(e){logErr(e)}
   const cut=Date.now()-DAYMS;
   const v=(await Promise.all(ids.map(async id=>{try{
     const u=await getDoc(doc(db,"users",id));if(!u.exists())return null;const d=u.data();let st=[];
-    try{const s=await getDocs(query(collection(db,"users",id,"stories"),where("ms",">",cut)));st=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>a.ms-b.ms)}catch(e){}
+    try{const s=await getDocs(query(collection(db,"users",id,"stories"),where("ms",">",cut)));st=s.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>a.ms-b.ms)}catch(e){logErr(e)}
     return {id,username:d.username||"?",photo:d.photo,stories:st,note:d.note&&d.note.ms>cut?d.note.t:""}}catch(e){return null}}))).filter(Boolean);
   peopleCache={t:Date.now(),v};return v;
 }
@@ -654,7 +682,7 @@ function viewStories(p){
   const hd=h("div");hd.style.cssText="display:flex;align-items:center;gap:10px;padding:10px 14px;color:#fff";
   const img=document.createElement("img");img.style.cssText="flex:1;min-height:0;width:100%;object-fit:contain";
   hd.appendChild(ava(p.username,34,p.photo));const nm=h("b",null,p.username);nm.style.flex="1";hd.appendChild(nm);
-  if(p.id===me.uid){const dl=h("button",null,"🗑");dl.onclick=async()=>{try{await deleteDoc(doc(db,"users",me.uid,"stories",p.stories[i].id))}catch(e){}peopleCache=null;closeOv();show(tab)};hd.appendChild(dl)}
+  if(p.id===me.uid){const dl=h("button",null,"🗑");dl.onclick=async()=>{try{await deleteDoc(doc(db,"users",me.uid,"stories",p.stories[i].id))}catch(e){logErr(e)}peopleCache=null;closeOv();show(tab)};hd.appendChild(dl)}
   const x=h("button",null,"✕");x.style.fontSize="22px";x.onclick=()=>{closeOv();show(tab)};hd.appendChild(x);
   ov.appendChild(bars);ov.appendChild(hd);ov.appendChild(img);
   const segs=p.stories.map(()=>{const s=h("div"),f=h("div");s.style.cssText="flex:1;height:3px;border-radius:2px;background:#fff4;overflow:hidden";f.style.cssText="height:100%;width:0;background:#fff";s.appendChild(f);bars.appendChild(s);return f});
@@ -672,21 +700,21 @@ function noteSheet(){
   openOv("#000a",true);const s=sheetBox();s.appendChild(h("div","pn","ملاحظة (بتظهر 24 ساعة)"));
   const i=document.createElement("input");i.className="sfld";i.maxLength=60;i.placeholder="شو بتفكر؟";s.appendChild(i);
   const ok=h("button","btn","مشاركة"),dl=h("button","btn g","حذف الملاحظة");
-  const save=async t=>{try{await setDoc(doc(db,"users",me.uid),{note:t?{t,ms:Date.now()}:null},{merge:true})}catch(e){}peopleCache=null;closeOv();show(tab)};
+  const save=async t=>{try{await setDoc(doc(db,"users",me.uid),{note:t?{t,ms:Date.now()}:null},{merge:true})}catch(e){logErr(e)}peopleCache=null;closeOv();show(tab)};
   ok.onclick=()=>{const t=i.value.trim();if(t)save(t)};dl.onclick=()=>save("");
   s.appendChild(ok);s.appendChild(dl);ov.appendChild(s);i.focus();
 }
 function card(p,photo){
   const c=h("div","post"),hd=h("div","phd");hd.appendChild(ava(p.username,34,photo));
   const nm=h("b",null,p.username);nm.style.flex="1";nm.onclick=()=>{if(p.uid!==me.uid){closeOv();openUser(p.uid)}};hd.appendChild(nm);
-  if(p.uid===me.uid){const dl=h("button",null,"🗑");dl.onclick=async()=>{if(!confirm("حذف المنشور؟"))return;try{await deleteDoc(doc(db,"users",me.uid,"posts",p.id))}catch(e){}closeOv();show(tab)};hd.appendChild(dl)}
+  if(p.uid===me.uid){const dl=h("button",null,"🗑");dl.onclick=async()=>{if(!confirm("حذف المنشور؟"))return;try{await deleteDoc(doc(db,"users",me.uid,"posts",p.id))}catch(e){logErr(e)}closeOv();show(tab)};hd.appendChild(dl)}
   c.appendChild(hd);
   let m;if(p.kind==="video"){m=document.createElement("video");m.src=p.video;m.controls=true;m.playsInline=true;m.preload="metadata"}else{m=document.createElement("img");m.src=p.photo}
   m.style.cssText="width:100%;max-height:75vh;object-fit:contain;background:#000;display:block";c.appendChild(m);
   const ac=h("div","pac"),lk=h("button",null,(p.likers||[]).includes(me.uid)?"❤️":"🤍"),cn=h("div","pcnt",(p.likers||[]).length+" إعجاب");
   lk.onclick=async()=>{const on=!(p.likers||[]).includes(me.uid);p.likers=on?[...(p.likers||[]),me.uid]:(p.likers||[]).filter(x=>x!==me.uid);
     lk.textContent=on?"❤️":"🤍";cn.textContent=p.likers.length+" إعجاب";
-    try{await updateDoc(doc(db,"users",p.uid,"posts",p.id),{likers:on?arrayUnion(me.uid):arrayRemove(me.uid)})}catch(e){}};
+    try{await updateDoc(doc(db,"users",p.uid,"posts",p.id),{likers:on?arrayUnion(me.uid):arrayRemove(me.uid)})}catch(e){logErr(e)}};
   ac.appendChild(lk);c.appendChild(ac);c.appendChild(cn);
   if(p.cap){const cp=h("div","pb","");cp.appendChild(h("b",null,p.username+" "));cp.appendChild(document.createTextNode(p.cap));cp.style.padding="4px 14px";c.appendChild(cp)}
   return c;
@@ -706,7 +734,7 @@ async function rHome(){
   const ph=Object.fromEntries(pp.map(x=>[x.id,x.photo]));
   posts.slice(0,30).forEach(p=>c.appendChild(card(p,ph[p.uid])));
 }
-const robs=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target.querySelector("video");if(!v)return;if(e.isIntersecting)v.play().catch(()=>{});else v.pause()}),{threshold:.6});
+const robs=new IntersectionObserver(es=>es.forEach(e=>{const v=e.target.querySelector("video");if(!v)return;if(e.isIntersecting)v.play().catch(logErr);else v.pause()}),{threshold:.6});
 async function rReels(){
   const c=$("v-reels");c.className="view";
   const pp=await loadPeople(),vs=(await loadPosts(pp.map(x=>x.id),10)).filter(p=>p.kind==="video");
@@ -720,14 +748,14 @@ $("plus").onclick=newSheet;
 const DM="https://ig.me/m/a.__h811",DAY=864e5,DEFMSG="أهلاً! أنا مو متواجد هلق، برد عليك بأقرب وقت 🙏";
 async function getPrem(uid){
   let exp=0,g={on:false,msg:DEFMSG};
-  try{const a=await getDoc(doc(db,"users",uid,"premium","status"));if(a.exists())exp=a.data().exp||0}catch(e){}
-  try{const b=await getDoc(doc(db,"users",uid,"premium","settings"));if(b.exists())g={...g,...b.data()}}catch(e){}
+  try{const a=await getDoc(doc(db,"users",uid,"premium","status"));if(a.exists())exp=a.data().exp||0}catch(e){logErr(e)}
+  try{const b=await getDoc(doc(db,"users",uid,"premium","settings"));if(b.exists())g={...g,...b.data()}}catch(e){logErr(e)}
   return {exp,on:!!g.on,msg:g.msg||DEFMSG};
 }
 async function rPrem(){
   const c=$("v-prem");c.textContent="";
   const P=await getPrem(me.uid);let adm=false;
-  try{adm=(await getDoc(doc(db,"admins",me.uid))).exists()}catch(e){}
+  try{adm=(await getDoc(doc(db,"admins",me.uid))).exists()}catch(e){logErr(e)}
   if(tab!=="prem")return;c.textContent="";
   const w=h("div","pf"),bk=h("button",null,"→ رجوع");bk.style.cssText="font-size:16px;margin-bottom:10px";bk.onclick=()=>show("me");w.appendChild(bk);
   w.appendChild(h("h2",null,"⭐ سوريا بريميوم"));
@@ -736,7 +764,7 @@ async function rPrem(){
   if(P.exp>Date.now()){
     const ok=h("div","pb","✅ الاشتراك مفعّل لحد "+new Date(P.exp).toLocaleDateString("ar"));ok.style.margin="8px 0";w.appendChild(ok);
     const f=h("div","form"),tg=h("button","btn",P.on?"الرد التلقائي: مفعّل ✓ (اضغط للإيقاف)":"الرد التلقائي: متوقف (اضغط للتشغيل)");
-    tg.onclick=async()=>{try{await setDoc(doc(db,"users",me.uid,"premium","settings"),{on:!P.on,msg:P.msg},{merge:true})}catch(e){}rPrem()};
+    tg.onclick=async()=>{try{await setDoc(doc(db,"users",me.uid,"premium","settings"),{on:!P.on,msg:P.msg},{merge:true})}catch(e){logErr(e)}rPrem()};
     const ta=document.createElement("textarea");ta.value=P.msg;ta.placeholder="رسالة الرد التلقائي";
     const sm=h("button","btn g","حفظ الرسالة");
     sm.onclick=async()=>{try{await setDoc(doc(db,"users",me.uid,"premium","settings"),{on:P.on,msg:ta.value.trim().slice(0,300)||DEFMSG},{merge:true});sm.textContent="تم الحفظ ✓"}catch(e){sm.textContent="فشل الحفظ"}};
@@ -755,7 +783,7 @@ async function rPrem(){
     const on=h("button","btn","تفعيل 30 يوم"),off=h("button","btn g","إلغاء الاشتراك");
     on.onclick=async()=>{try{const t=await find();if(!t)return;const p=await getPrem(t),e=Math.max(Date.now(),p.exp)+30*DAY;
       await setDoc(doc(db,"users",t,"premium","status"),{exp:e});
-      addDoc(collection(db,"users",t,"notifs"),{x:"تم تفعيل اشتراكك ⭐",from:me.uid,t:serverTimestamp(),r:false}).catch(()=>{});
+      addDoc(collection(db,"users",t,"notifs"),{x:"تم تفعيل اشتراكك ⭐",from:me.uid,t:serverTimestamp(),r:false}).catch(logErr);
       out.textContent="تم التفعيل لحد "+new Date(e).toLocaleDateString("ar")}catch(e){out.textContent="فشل التفعيل"}};
     off.onclick=async()=>{try{const t=await find();if(!t)return;await setDoc(doc(db,"users",t,"premium","status"),{exp:0});out.textContent="تم الإلغاء"}catch(e){out.textContent="فشل الإلغاء"}};
     ap.appendChild(ui);ap.appendChild(on);ap.appendChild(off);ap.appendChild(out);w.appendChild(ap);
@@ -764,12 +792,12 @@ async function rPrem(){
 }
 async function openUser(uid){
   show("user");const c=$("v-user");c.textContent="";c.appendChild(h("div","empty","..."));
-  let P=null;try{const s=await getDoc(doc(db,"users",uid));if(s.exists())P=s.data()}catch(e){}
+  let P=null;try{const s=await getDoc(doc(db,"users",uid));if(s.exists())P=s.data()}catch(e){logErr(e)}
   if(!P){c.textContent="";c.appendChild(h("div","empty","تعذّر تحميل الحساب"));return}
   const cn=await counts(uid);let isF=false;
-  try{isF=(await getDoc(doc(db,"users",me.uid,"following",uid))).exists()}catch(e){}
+  try{isF=(await getDoc(doc(db,"users",me.uid,"following",uid))).exists()}catch(e){logErr(e)}
   if(tab!=="user")return;c.textContent="";
-  const bk=h("button",null,"→ رجوع");bk.style.cssText="font-size:16px;padding:12px 16px";bk.onclick=()=>show("search");c.appendChild(bk);
+  const bk=h("button",null,"→ رجوع");bk.style.cssText="font-size:16px;padding:12px 16px";bk.onclick=()=>{if(fromChat){const f=fromChat;fromChat=null;openChat(f.uid,f.username)}else show("search")};c.appendChild(bk);
   const w=h("div","pf"),top=h("div","pft");top.appendChild(ava(P.username,86,P.photo));top.appendChild(statsRow(cn[2],cn[0],cn[1]));w.appendChild(top);
   w.appendChild(h("div","pn",P.name||P.username));w.appendChild(h("div","pu","@"+P.username));
   if(P.bio)w.appendChild(h("div","pb",P.bio));
@@ -777,8 +805,8 @@ async function openUser(uid){
   fb.onclick=async()=>{fb.disabled=true;try{
     if(isF){await deleteDoc(doc(db,"users",uid,"followers",me.uid));await deleteDoc(doc(db,"users",me.uid,"following",uid))}
     else{await setDoc(doc(db,"users",uid,"followers",me.uid),{t:serverTimestamp()});await setDoc(doc(db,"users",me.uid,"following",uid),{t:serverTimestamp()});
-      addDoc(collection(db,"users",uid,"notifs"),{x:"@"+uname+" بدأ بمتابعتك",from:me.uid,t:serverTimestamp(),r:false}).catch(()=>{})}
-  }catch(e){}peopleCache=null;openUser(uid)};
+      addDoc(collection(db,"users",uid,"notifs"),{x:"@"+uname+" بدأ بمتابعتك",from:me.uid,t:serverTimestamp(),r:false}).catch(logErr)}
+  }catch(e){logErr(e)}peopleCache=null;openUser(uid)};
   mb.onclick=()=>openChat(uid,P.username);
   acts.appendChild(fb);acts.appendChild(mb);w.appendChild(acts);profBody(w,uid);c.appendChild(w);
 }
